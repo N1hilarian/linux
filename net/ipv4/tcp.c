@@ -597,6 +597,7 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 	struct tcp_sock *tp = tcp_sk(sk);
 	int answ;
 	bool slow;
+	struct sk_buff *skb;
 
 	switch (cmd) {
 	case SIOCINQ:
@@ -617,6 +618,16 @@ int tcp_ioctl(struct sock *sk, int cmd, unsigned long arg)
 
 		if ((1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV))
 			answ = 0;
+            else if (unlikely(tp->repair)) {
+                answ = 0;
+                skb_rbtree_walk(skb, &sk->tcp_rtx_queue) {
+                    copied += skb->len;
+                }
+
+                skb_queue_walk(&sk->sk_write_queue, skb) {
+                    opied += skb->len;
+                }
+            }
 		else
 			answ = READ_ONCE(tp->write_seq) - tp->snd_una;
 		break;
